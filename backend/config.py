@@ -1,10 +1,11 @@
 """Configuration management from environment variables"""
+
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file if it exists
-load_dotenv()
+_ = load_dotenv()
 
 # FastAPI configuration
 FASTAPI_PORT = int(os.getenv("FASTAPI_PORT", "8000"))
@@ -24,4 +25,3 @@ RULES_FILE = os.getenv("RULES_FILE", "rules.json")
 
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent
-

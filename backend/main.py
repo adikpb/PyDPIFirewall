@@ -1,4 +1,5 @@
 """FastAPI application with metrics endpoint"""
+
 import logging
 import threading
 import signal
@@ -6,7 +7,7 @@ import sys
 import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
 from fastapi import FastAPI, Query, HTTPException, Body
 from fastapi.responses import StreamingResponse
 from mitmproxy.options import Options
@@ -28,7 +29,7 @@ from .firewall_addon import FirewallAddon
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL.upper()),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,8 @@ mitmproxy_master = None
 rules_manager = None
 
 # App state
-app_state: Dict[str, Any] = {
-    "start_time": datetime.utcnow(),
+app_state: dict[str, Any] = {
+    "start_time": datetime.now(),
     "observe_mode": False,
     "last_rules_reload_at": None,
 }
@@ -48,23 +49,25 @@ app_state: Dict[str, Any] = {
 def run_mitmproxy():
     """Run mitmproxy in a separate thread with its own event loop"""
     global mitmproxy_master, rules_manager
-    
+
     try:
         if not rules_manager:
             logger.error("Rules manager not initialized, cannot start mitmproxy")
             return
-        
+
         # Create a new event loop for this thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         opts = Options(listen_port=MITMPROXY_PORT)
         mitmproxy_master = DumpMaster(opts, loop=loop)
-        
+
         # Add the firewall addon
-        firewall_addon = FirewallAddon(rules_manager, get_observe_mode=lambda: app_state["observe_mode"])
+        firewall_addon = FirewallAddon(
+            rules_manager, get_observe_mode=lambda: app_state["observe_mode"]
+        )
         mitmproxy_master.addons.add(firewall_addon)
-        
+
         logger.info(f"Starting mitmproxy on port {MITMPROXY_PORT}")
         # Run the async run() method in the event loop
         loop.run_until_complete(mitmproxy_master.run())
@@ -72,6 +75,7 @@ def run_mitmproxy():
         # Use print to avoid logging issues when event loop isn't set up
         print(f"Error in mitmproxy: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
 
 
@@ -79,43 +83,45 @@ def run_mitmproxy():
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown"""
     global mitmproxy_thread, mitmproxy_master, rules_manager
-    
+
     # Startup
     logger.info("Initializing firewall...")
-    
+
     # Initialize database
     init_database()
-    
+
     # Initialize rules manager
     rules_manager = RulesManager("rules.json")
     app_state["last_rules_reload_at"] = rules_manager.last_loaded_at
-    
+
     # Start mitmproxy in background thread
     mitmproxy_thread = threading.Thread(target=run_mitmproxy, daemon=True)
     mitmproxy_thread.start()
-    
-    logger.info(f"Firewall started. FastAPI on port {FASTAPI_PORT}, mitmproxy on port {MITMPROXY_PORT}")
-    
+
+    logger.info(
+        f"Firewall started. FastAPI on port {FASTAPI_PORT}, mitmproxy on port {MITMPROXY_PORT}"
+    )
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down firewall...")
-    
+
     # Stop rules manager watcher
     if rules_manager:
         rules_manager.stop_watching()
-    
+
     # Stop mitmproxy
     if mitmproxy_master:
         try:
             mitmproxy_master.shutdown()
         except Exception as e:
             logger.warning(f"Error shutting down mitmproxy: {e}")
-    
+
     # Wait for thread to finish
     if mitmproxy_thread and mitmproxy_thread.is_alive():
         mitmproxy_thread.join(timeout=2.0)
-    
+
     logger.info("Firewall shutdown complete")
 
 
@@ -123,7 +129,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="DPI Firewall",
     description="Deep Packet Inspection Firewall with metrics",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 
@@ -131,20 +137,20 @@ app = FastAPI(
 async def metrics():
     """Get firewall metrics"""
     total_requests, blocked_requests = get_metrics()
-    return {
-        "total_requests": total_requests,
-        "blocked_requests": blocked_requests
-    }
+    return {"total_requests": total_requests, "blocked_requests": blocked_requests}
 
 
 @app.get("/logs")
 async def list_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=500),
-    blocked: Optional[bool] = Query(None),
-    url_contains: Optional[str] = Query(None),
+    blocked: bool | None = Query(None),
+    url_contains: str | None = Query(None),
 ):
-    items, total = get_logs(page=page, page_size=page_size, blocked=blocked, url_contains=url_contains)
+    items, total = get_logs(
+        page=page, page_size=page_size, blocked=blocked, url_contains=url_contains
+    )
+
     def to_dict(r):
         return {
             "id": r.id,
@@ -155,6 +161,7 @@ async def list_logs(
             "body": r.body,
             "matched_rule": r.matched_rule,
         }
+
     return {"items": [to_dict(r) for r in items], "total": total}
 
 
@@ -175,7 +182,7 @@ async def get_log(log_id: int):
 
 
 @app.delete("/logs")
-async def purge_logs(blocked: Optional[bool] = Query(None)):
+async def purge_logs(blocked: bool | None = Query(None)):
     deleted = delete_logs(blocked)
     return {"deleted": deleted}
 
@@ -199,17 +206,17 @@ async def reload_rules():
 
 
 @app.post("/rules/validate")
-async def validate_rules(payload: Dict = Body(...)):
+async def validate_rules(payload: dict[str, str] = Body(...)):
     valid, errors = RulesManager.validate_rules_payload(payload)
     return {"valid": valid, "errors": errors}
 
 
 @app.post("/rules/test")
-async def test_rules(payload: Dict = Body(...)):
+async def test_rules(payload: dict[str, str | dict[str, str]] = Body(...)):
     if not rules_manager:
         raise HTTPException(status_code=500, detail="Rules manager not initialized")
     url = payload.get("url", "")
-    headers = payload.get("headers") or {}
+    headers = payload.get("headers", None) or {}
     body = payload.get("body") or ""
     matched = rules_manager.check_request(url, headers, body)
     if matched:
@@ -238,10 +245,13 @@ async def metrics_reset():
 
 @app.get("/status")
 async def status():
-    proxy_running = bool(mitmproxy_master and getattr(mitmproxy_master, "running", False))
+    proxy_running = bool(
+        mitmproxy_master and getattr(mitmproxy_master, "running", False)
+    )
     rules_count = len(rules_manager.serialize_rules()) if rules_manager else 0
     from .config import DB_PATH
-    uptime_sec = int((datetime.utcnow() - app_state["start_time"]).total_seconds())
+
+    uptime_sec = int((datetime.now() - app_state["start_time"]).total_seconds())
     return {
         "fastapi_port": FASTAPI_PORT,
         "mitmproxy_port": MITMPROXY_PORT,
@@ -254,7 +264,7 @@ async def status():
 
 
 @app.post("/admin/log-level")
-async def admin_log_level(payload: Dict = Body(...)):
+async def admin_log_level(payload: dict = Body(...)):
     level = str(payload.get("level", "INFO")).upper()
     if level not in {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"}:
         raise HTTPException(status_code=400, detail="Invalid level")
@@ -263,7 +273,7 @@ async def admin_log_level(payload: Dict = Body(...)):
 
 
 @app.post("/admin/firewall")
-async def admin_firewall(payload: Dict = Body(...)):
+async def admin_firewall(payload: dict = Body(...)):
     enabled = payload.get("enabled")
     if not isinstance(enabled, bool):
         raise HTTPException(status_code=400, detail="'enabled' must be boolean")
@@ -272,7 +282,7 @@ async def admin_firewall(payload: Dict = Body(...)):
 
 
 @app.get("/export/logs")
-async def export_logs(blocked: Optional[bool] = Query(None), format: str = Query("csv")):
+async def export_logs(blocked: bool | None = Query(None), format: str = Query("csv")):
     fmt = format.lower()
     if fmt not in {"csv", "ndjson"}:
         raise HTTPException(status_code=400, detail="format must be csv or ndjson")
@@ -291,22 +301,39 @@ async def export_logs(blocked: Optional[bool] = Query(None), format: str = Query
     if fmt == "csv":
         import csv
         import io
+
         def generate():
             buffer = io.StringIO()
-            writer = csv.DictWriter(buffer, fieldnames=["id","url","blocked","timestamp","headers","body","matched_rule"])
+            writer = csv.DictWriter(
+                buffer,
+                fieldnames=[
+                    "id",
+                    "url",
+                    "blocked",
+                    "timestamp",
+                    "headers",
+                    "body",
+                    "matched_rule",
+                ],
+            )
             writer.writeheader()
             yield buffer.getvalue()
-            buffer.seek(0); buffer.truncate(0)
+            buffer.seek(0)
+            buffer.truncate(0)
             for r in iterate_logs(blocked):
                 writer.writerow(row_to_dict(r))
                 yield buffer.getvalue()
-                buffer.seek(0); buffer.truncate(0)
+                buffer.seek(0)
+                buffer.truncate(0)
+
         return StreamingResponse(generate(), media_type="text/csv")
     else:
         import json as _json
+
         def generate():
             for r in iterate_logs(blocked):
                 yield _json.dumps(row_to_dict(r)) + "\n"
+
         return StreamingResponse(generate(), media_type="application/x-ndjson")
 
 
@@ -343,8 +370,8 @@ if __name__ == "__main__":
     # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     # Run FastAPI with uvicorn
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=FASTAPI_PORT)
 
+    uvicorn.run(app, host="0.0.0.0", port=FASTAPI_PORT)
