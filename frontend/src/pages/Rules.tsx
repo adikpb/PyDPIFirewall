@@ -29,6 +29,9 @@ const Rules = () => {
 
   useEffect(() => {
     fetchRules();
+    const intervalId = setInterval(fetchRules, 15000); // Fetch data every 15 seconds
+
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, []);
 
   const handleReload = async () => {

@@ -34,6 +34,9 @@ const Logs = () => {
     };
 
     fetchLogs();
+    const intervalId = setInterval(fetchLogs, 5000); // Fetch data every 5 seconds
+
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, [page, pageSize, blocked]);
 
   const handlePurge = async () => {
