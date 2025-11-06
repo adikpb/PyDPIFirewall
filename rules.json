@@ -1,0 +1,29 @@
+{
+  "rules": [
+    {
+      "pattern": "instagram",
+      "type": "url",
+      "action": "block",
+      "description": "Block requests to instagram"
+    },
+    {
+      "pattern": "malicious\\.com",
+      "type": "url",
+      "action": "block",
+      "description": "Block requests to malicious.com"
+    },
+    {
+      "pattern": "password.*=.*123456",
+      "type": "body",
+      "action": "block",
+      "description": "Block requests with weak passwords in body"
+    },
+    {
+      "pattern": "User-Agent.*bot",
+      "type": "header",
+      "action": "block",
+      "description": "Block requests from bots"
+    }
+  ]
+}
+
