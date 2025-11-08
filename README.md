@@ -128,3 +128,12 @@ To test the firewall:
 2. Configure your browser to use `localhost:8080` as HTTP proxy
 3. Visit a website
 4. Check logs and metrics endpoint to see requests being processed
+
+---
+
+## Demonstration
+
+
+https://github.com/user-attachments/assets/0dfb157c-98c4-4364-aa58-1506a3f0fb46
+
+
