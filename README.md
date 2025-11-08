@@ -14,16 +14,12 @@ A Python-based Deep Packet Inspection (DPI) firewall that inspects HTTP traffic 
 ## Installation
 
 1. Install dependencies:
+
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
-2. Copy environment variables template:
-```bash
-cp .env.example .env
-```
-
-3. (Optional) Edit `.env` to configure ports and other settings
+2. (Optional) Edit `.env` to configure ports and other settings
 
 ## Configuration
 
@@ -60,8 +56,9 @@ The `rules.json` file contains structured rules:
 ## Usage
 
 1. Start the firewall:
+
 ```bash
-python -m backend.main
+uv run -m backend.main
 ```
 
 2. Configure your client to use the proxy:
@@ -69,11 +66,13 @@ python -m backend.main
    - Proxy port: `8080` (or your configured `MITMPROXY_PORT`)
 
 3. Access metrics:
+
 ```bash
 curl http://localhost:8000/metrics
 ```
 
 4. Health check:
+
 ```bash
 curl http://localhost:8000/health
 ```
@@ -83,6 +82,7 @@ curl http://localhost:8000/health
 ### GET /metrics
 
 Returns firewall metrics:
+
 ```json
 {
   "total_requests": 100,
@@ -93,6 +93,7 @@ Returns firewall metrics:
 ### GET /health
 
 Returns health status:
+
 ```json
 {
   "status": "healthy"
@@ -113,6 +114,8 @@ The SQLite database stores request logs in the `requests` table:
 ## Notes
 
 - Only HTTP traffic is inspected (HTTPS is not supported)
+  > [!NOTE]
+  > Unless certificate is trusted from mitm.it after connecting to proxy
 - Blocked requests return HTTP 403 Forbidden with a custom message
 - Rules are automatically reloaded when `rules.json` is modified
 - The firewall runs mitmproxy and FastAPI in the same process
@@ -125,4 +128,3 @@ To test the firewall:
 2. Configure your browser to use `localhost:8080` as HTTP proxy
 3. Visit a website
 4. Check logs and metrics endpoint to see requests being processed
-
