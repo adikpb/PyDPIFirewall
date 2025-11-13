@@ -35,7 +35,9 @@ class FirewallAddon:
             headers_str = "\n".join(f"{k}: {v}" for k, v in headers.items())
 
             # Check rules
-            matched_rule = self.rules_manager.check_request(url, headers, body)
+            matched_rule = self.rules_manager.check_request(
+                url, headers, body, flow.request.port
+            )
 
             if matched_rule and matched_rule.action == "block":
                 description = matched_rule.description or matched_rule.pattern

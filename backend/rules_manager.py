@@ -18,12 +18,18 @@ class Rule:
     """Represents a firewall rule"""
 
     def __init__(
-        self, pattern: str, rule_type: str, action: str, description: str = ""
+        self,
+        pattern: str,
+        rule_type: str,
+        action: str,
+        description: str = "",
+        port: int | None = None,
     ):
         self.pattern: str = pattern
         self.type: str = rule_type  # url, header, or body
         self.action: str = action  # block
         self.description: str = description
+        self.port: int | None = port
         try:
             self.regex: re.Pattern[Any] | None = re.compile(pattern, re.IGNORECASE)
         except re.error as e:
@@ -58,11 +64,14 @@ class RulesManager(FileSystemEventHandler):
 
             new_rules: list[Rule] = []
             for rule_data in data.get("rules", []):
+                port_str = rule_data.get("port")
+                port = int(port_str) if port_str and str(port_str).isdigit() else None
                 rule = Rule(
                     pattern=rule_data.get("pattern", ""),
                     rule_type=rule_data.get("type", "url"),
                     action=rule_data.get("action", "block"),
                     description=rule_data.get("description", ""),
+                    port=port,
                 )
                 if rule.regex:  # Only add if regex compiled successfully
                     new_rules.append(rule)
@@ -104,7 +113,7 @@ class RulesManager(FileSystemEventHandler):
             self.observer.join()
 
     def check_request(
-        self, url: str, headers: dict[str, str], body: str = ""
+        self, url: str, headers: dict[str, str], body: str = "", port: int | None = None
     ) -> Rule | None:
         """Check if a request matches any rule"""
         with self.lock:
@@ -112,6 +121,10 @@ class RulesManager(FileSystemEventHandler):
 
         for rule in rules:
             if not rule.regex:
+                continue
+
+            # If rule has a port, it must match the request's port
+            if rule.port is not None and rule.port != port:
                 continue
 
             if rule.type == "url":
@@ -136,19 +149,22 @@ class RulesManager(FileSystemEventHandler):
 
         return None
 
-    def serialize_rules(self) -> list[dict[str, str]]:
+    def serialize_rules(self) -> list[dict[str, Any]]:
         with self.lock:
             rules = self.rules.copy()
-        return [
-            {
-                "pattern": r.pattern,
-                "type": r.type,
-                "action": r.action,
-                "description": r.description,
-            }
-            for r in rules
-            if r.regex is not None
-        ]
+        serialized_rules = []
+        for r in rules:
+            if r.regex is not None:
+                rule_data = {
+                    "pattern": r.pattern,
+                    "type": r.type,
+                    "action": r.action,
+                    "description": r.description,
+                }
+                if r.port is not None:
+                    rule_data["port"] = r.port
+                serialized_rules.append(rule_data)
+        return serialized_rules
 
     @staticmethod
     def validate_rules_payload(
@@ -165,6 +181,7 @@ class RulesManager(FileSystemEventHandler):
             pat = rd.get("pattern")
             typ = rd.get("type")
             act = rd.get("action")
+            prt = rd.get("port")
             if not pat or not isinstance(pat, str):
                 errors.append({"index": str(idx), "message": "pattern is required"})
             if typ not in {"url", "header", "body"}:
@@ -176,6 +193,11 @@ class RulesManager(FileSystemEventHandler):
                 )
             if act != "block":
                 errors.append({"index": str(idx), "message": "action must be 'block'"})
+            if prt is not None:
+                if not isinstance(prt, int) or prt <= 0:
+                    errors.append(
+                        {"index": str(idx), "message": "port must be a positive integer"}
+                    )
             try:
                 re.compile(pat or "")
             except re.error as e:

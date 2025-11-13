@@ -7,6 +7,7 @@ interface Rule {
   type: string;
   action: string;
   description: string;
+  port?: number;
 }
 
 const Rules = () => {
@@ -72,6 +73,7 @@ const Rules = () => {
             <th>Type</th>
             <th>Action</th>
             <th>Description</th>
+            <th>Port</th>
           </tr>
         </thead>
         <tbody>
@@ -81,6 +83,7 @@ const Rules = () => {
               <td>{rule.type}</td>
               <td>{rule.action}</td>
               <td>{rule.description}</td>
+              <td>{rule.port}</td>
             </tr>
           ))}
         </tbody>

@@ -23,7 +23,157 @@
       "type": "header",
       "action": "block",
       "description": "Block requests from bots"
+    },
+    {
+      "pattern": "facebook",
+      "type": "url",
+      "action": "block",
+      "description": "Block requests to Facebook"
+    },
+    {
+      "pattern": "twitter",
+      "type": "url",
+      "action": "block",
+      "description": "Block requests to Twitter"
+    },
+    {
+      "pattern": "tiktok",
+      "type": "url",
+      "action": "block",
+      "description": "Block requests to TikTok"
+    },
+    {
+      "pattern": "doubleclick\\.net",
+      "type": "url",
+      "action": "block",
+      "description": "Block requests to common ad-serving domain"
+    },
+    {
+      "pattern": "googleadservices\\.com",
+      "type": "url",
+      "action": "block",
+      "description": "Block requests to Google Ad Services"
+    },
+    {
+      "pattern": "User-Agent.*sqlmap",
+      "type": "header",
+      "action": "block",
+      "description": "Block requests from sqlmap scanning tool"
+    },
+    {
+      "pattern": "User-Agent.*nmap",
+      "type": "header",
+      "action": "block",
+      "description": "Block requests from nmap scanning tool"
+    },
+    {
+      "pattern": "' OR '1'='1",
+      "type": "body",
+      "action": "block",
+      "description": "Block basic SQL injection attempt"
+    },
+    {
+      "pattern": "<script>.*</script>",
+      "type": "body",
+      "action": "block",
+      "description": "Block basic XSS attempt"
+    },
+    {
+      "pattern": "\\.exe",
+      "type": "url",
+      "action": "block",
+      "description": "Block download of executable files"
+    },
+    {
+      "pattern": "\\.zip",
+      "type": "url",
+      "action": "block",
+      "description": "Block download of zip files"
+    },
+    {
+      "pattern": "adultfriendfinder\\.com",
+      "type": "url",
+      "action": "block",
+      "description": "Block access to adult content"
+    },
+    {
+      "pattern": "poker\\.com",
+      "type": "url",
+      "action": "block",
+      "description": "Block access to gambling site"
+    },
+    {
+      "pattern": "paypal-update\\.com",
+      "type": "url",
+      "action": "block",
+      "description": "Block access to known phishing site"
+    },
+    {
+      "pattern": "4[0-9]{12}(?:[0-9]{3})?",
+      "type": "body",
+      "action": "block",
+      "description": "Block requests containing Visa credit card numbers"
+    },
+    {
+      "pattern": "5[1-5][0-9]{14}",
+      "type": "body",
+      "action": "block",
+      "description": "Block requests containing Mastercard credit card numbers"
+    },
+    {
+      "pattern": "User-Agent.*MSIE 6\\.0",
+      "type": "header",
+      "action": "block",
+      "description": "Block requests from outdated Internet Explorer 6"
+    },
+    {
+      "pattern": "torrent",
+      "type": "url",
+      "action": "block",
+      "description": "Block access to torrent sites"
+    },
+    {
+      "pattern": "onion",
+      "type": "url",
+      "action": "block",
+      "description": "Block access to .onion sites (Tor network)"
+    },
+    {
+      "pattern": ".*",
+      "type": "url",
+      "action": "block",
+      "description": "Block all traffic on port 8080",
+      "port": 8080
+    },
+    {
+      "pattern": "\\\\.\\./",
+      "type": "url",
+      "action": "block",
+      "description": "Block directory traversal attempts"
+    },
+    {
+      "pattern": "\\$\\{jndi:ldap:",
+      "type": "body",
+      "action": "block",
+      "description": "Block Log4j vulnerability exploit attempts"
+    },
+    {
+      "pattern": "cat /etc/passwd",
+      "type": "body",
+      "action": "block",
+      "description": "Block common command injection attempt"
+    },
+    {
+      "pattern": "c3pool\\.com",
+      "type": "url",
+      "action": "block",
+      "description": "Block connection to known crypto mining pool"
+    },
+    {
+      "pattern": "() \\{\\s*:;\\s*\\};",
+      "type": "header",
+      "action": "block",
+      "description": "Block Shellshock vulnerability exploit attempts"
     }
   ]
 }
-
